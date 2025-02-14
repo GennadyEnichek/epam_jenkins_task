@@ -1,5 +1,5 @@
-FROM node:7.8.0
+FROM node:22.14.0
 WORKDIR /opt
-ADD . /opt
+ADD . /opt/
 RUN npm install
 ENTRYPOINT ["npm", "run", "start"]
