@@ -40,7 +40,6 @@ pipeline {
                     docker.Image.push("${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}")
                 }
                 sh'docker images'
-                sh"docker image save -o ${BRANCH_NAME}-image.tar "${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}""
             }
         }
 
