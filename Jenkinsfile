@@ -55,10 +55,10 @@ pipeline {
                 echo "Deploy application to main environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker run -d --expose ${MAIN_PORT} -p ${MAIN_PORT}:3000 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q | xargs docker container stop"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q -a | xargs docker container rm"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker images -q | xargs docker image rm"
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker images -q | xargs docker image rm"                        
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker run -d --expose ${MAIN_PORT} -p ${MAIN_PORT}:3000 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
                     '''
                 }
             }
@@ -74,10 +74,10 @@ pipeline {
                 echo "Deploy application to dev environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d --expose ${ENV_PORT} -p ${ENV_PORT}:3000 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q | xargs docker container stop"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q -a | xargs docker container rm"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker images -q | xargs docker image rm"                        
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker images -q | xargs docker image rm"                    	
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d --expose ${ENV_PORT} -p ${ENV_PORT}:3000 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"                       
                     '''
                 }
             }
