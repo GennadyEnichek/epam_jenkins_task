@@ -4,7 +4,7 @@ pipeline {
     
     environment{
     	DOCKER_HUB_REPO = "genadijsjeniceks/"
-        IMAGE_TAG = "V1.0"
+        IMAGE_TAG = "v1.0.0"
         REMOTE_MAIN_HOST = "192.168.56.20"
         REMOTE_MAIN_HOST_USER = "vagrant"        
         REMOTE_DEV_HOST = "192.168.56.20"
@@ -18,7 +18,7 @@ pipeline {
             steps{
                 echo "Building the application"
                 nodejs("my-nodejs"){
-                    sh'npm install'
+                    sh'npm ci --cache /var/jenkins_home/.npm --prefer-offline'
                 }
             }
         }
