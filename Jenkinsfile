@@ -37,7 +37,9 @@ pipeline {
                 echo "Create the image"
                 script{
                     docker.build("${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}")
-                    docker.Image.push("${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}")
+                    docker.withRegistry("https://registry.hub.docker.com", "docker-hab-cred"){
+                    	docker.image("${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}").push()
+                    }
                 }
                 sh'docker images'
             }
