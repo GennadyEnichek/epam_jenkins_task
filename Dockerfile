@@ -1,5 +1,2 @@
-FROM node:7.8.0
-WORKDIR /opt
-ADD . /opt
-RUN npm install
-ENTRYPOINT npm run start
+FROM nginx:1.27.4-alpine
+COPY build /usr/share/nginx/html
