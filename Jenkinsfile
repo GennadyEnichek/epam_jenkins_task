@@ -41,7 +41,7 @@ pipeline {
             	    if ./hadolint -- version
             	        then ./hadolint Dockerfile
 		        else curl -o hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
-		    	sudo chmod +x hadolint
+		    	chmod +x hadolint
 		    	./hadolint Dockerfile
             	    fi
             	'''
