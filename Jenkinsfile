@@ -4,13 +4,13 @@ pipeline {
     
     environment{
     	DOCKER_HUB_REPO = "genadijsjeniceks/"
-        IMAGE_TAG = "v1.0.0"
+        IMAGE_TAG = "v2.0.0"
         REMOTE_MAIN_HOST = "192.168.56.20"
         REMOTE_MAIN_HOST_USER = "vagrant"        
         REMOTE_DEV_HOST = "192.168.56.20"
         REMOTE_DEV_HOST_USER = "vagrant"
         MAIN_PORT = "3000"
-        ENV_PORT = "3001"
+        DEV_PORT = "3001"
     }
    
     stages{
@@ -19,6 +19,8 @@ pipeline {
                 echo "Building the application"
                 nodejs("my-nodejs"){
                     sh'npm ci --cache /var/jenkins_home/.npm --prefer-offline'
+                    sh'npm run build'
+                    sh'ls -al'
                 }
             }
         }
@@ -33,12 +35,6 @@ pipeline {
         }
 
         stage("docker build"){
-            when{
-            	expression{
-            		def dockerTag = sh(script: "docker images --format '{{.Tag}}' ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}", returnStdout: true).trim()
-        		return dockerTag != "${IMAGE_TAG}"
-            	}
-            }
             steps{
                 echo "Create the image"
                 script{
@@ -62,10 +58,9 @@ pipeline {
                 sshagent(credentials: ['my-ssh']){
                     sh '''
                     	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q | xargs docker container stop"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q -a | xargs docker container rm"                       
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker run -d --expose ${MAIN_PORT} -p ${MAIN_PORT}:3000 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image prune -f"
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | xargs docker container rm -f; fi'                      
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker run -d -p ${MAIN_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image prune -a -f"
                     '''
                 }
             }
@@ -81,11 +76,10 @@ pipeline {
                 echo "Deploy application to dev environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q | xargs docker container stop"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker ps -q -a | xargs docker container rm"                  	
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d --expose ${ENV_PORT} -p ${ENV_PORT}:3000 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image prune -f"
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | xargs docker container rm -f; fi'                       
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image prune -a -f"
                     '''
                 }
             }
