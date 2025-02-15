@@ -39,10 +39,11 @@ pipeline {
             	echo "Check Dockerfile with hadolint"
             	sh'''
             	    if ./hadolint -- version
-		        then curl -o hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64"
-		    	sudo chmod +x hadolint"
+            	        then ./hadolint Dockerfile
+		        else curl -o hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+		    	sudo chmod +x hadolint
+		    	./hadolint Dockerfile
             	    fi
-            	    ./hadolint Dockerfile"
             	'''
             }
         }
