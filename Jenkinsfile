@@ -33,6 +33,19 @@ pipeline {
                 }
             }
         }
+        
+        stage("dockerfile check"){
+            steps{
+            	echo "Check Dockerfile with hadolint"
+            	sh'''
+            	    if ./hadolint -- version
+		        then curl -o hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64"
+		    	sudo chmod +x hadolint"
+            	    fi
+            	    ./hadolint Dockerfile"
+            	'''
+            }
+        }
 
         stage("docker build"){
             steps{
@@ -58,7 +71,7 @@ pipeline {
                 sshagent(credentials: ['my-ssh']){
                     sh '''
                     	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | xargs docker container rm -f; fi'                      
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} 'if [[ $(docker ps -q -a | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                      
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker run -d -p ${MAIN_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image prune -a -f"
                     '''
@@ -77,7 +90,7 @@ pipeline {
                 sshagent(credentials: ['my-ssh']){
                     sh '''
                     	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | xargs docker container rm -f; fi'                       
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                       
                         ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image prune -a -f"
                     '''
