@@ -17,6 +17,7 @@ pipeline {
         stage("build"){
             steps{
                 echo "Building the application"
+                sh"if $BRANCH_NAME == 'dev'; then rm src/logo.svg && mv src/logo1.svg src/logo.svg; fi"
                 nodejs("my-nodejs"){
                     sh'npm ci --cache /var/jenkins_home/.npm --prefer-offline'
                     sh'npm run build'
