@@ -1,6 +1,8 @@
 pipeline {
 
-    agent any
+    agent{
+        label "default"
+    }
     
     environment{
     	DOCKER_HUB_REPO = "genadijsjeniceks/"
@@ -58,6 +60,16 @@ pipeline {
                     }
                 }
                 sh'docker images'
+            }
+        }
+        
+        stage("vulnerability check"){
+            agent{
+                label "agent1"
+            }
+            steps{
+                echo "Docker image vulnerability check"
+                trivy image --exit-code 0 --severity HIGH,MEDIUM,LOW --no-progress ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}
             }
         }
 
