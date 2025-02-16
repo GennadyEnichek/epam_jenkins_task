@@ -1,6 +1,8 @@
 pipeline {
 
-    agent any
+    agent{
+        label "default"
+    }
     
     environment{
     	DOCKER_HUB_REPO = "genadijsjeniceks/"
@@ -17,7 +19,7 @@ pipeline {
         stage("build"){
             steps{
                 echo "Building the application"
-                sh"if $BRANCH_NAME == 'dev'; then rm src/logo.svg && mv src/logo1.svg src/logo.svg; fi"
+                sh "if $BRANCH_NAME == "dev"; then rm -f src/logo.svg && mv src/logo1.svg src/logo.svg; fi"
                 nodejs("my-nodejs"){
                     sh'npm ci --cache /var/jenkins_home/.npm --prefer-offline'
                     sh'npm run build'
@@ -34,6 +36,20 @@ pipeline {
                 }
             }
         }
+        
+        stage("dockerfile check"){
+            steps{
+            	echo "Check Dockerfile with hadolint"
+            	sh'''
+            	    if ./hadolint -- version
+            	        then ./hadolint Dockerfile
+		        else curl -o hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+		    	chmod +x hadolint
+		    	./hadolint Dockerfile
+            	    fi
+            	'''
+            }
+        }
 
         stage("docker build"){
             steps{
@@ -45,6 +61,16 @@ pipeline {
                     }
                 }
                 sh'docker images'
+            }
+        }
+        
+        stage("vulnerability check"){
+            agent{
+                label "agent1"
+            }
+            steps{
+                echo "Docker image vulnerability check"
+                sh"trivy image --exit-code 0 --severity HIGH,MEDIUM,LOW --no-progress ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
             }
         }
 
@@ -59,7 +85,7 @@ pipeline {
                 sshagent(credentials: ['my-ssh']){
                     sh '''
                     	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | xargs docker container rm -f; fi'                      
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} 'if [[ $(docker ps -q -a | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                      
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker run -d -p ${MAIN_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image prune -a -f"
                     '''
@@ -78,7 +104,7 @@ pipeline {
                 sshagent(credentials: ['my-ssh']){
                     sh '''
                     	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} 'if [[ $(docker ps -q | wc -l) -ne 0 ]]; then docker ps -q | xargs docker container rm -f; fi'                       
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                       
                         ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
                         ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image prune -a -f"
                     '''
