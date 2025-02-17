@@ -107,10 +107,13 @@ pipeline {
                 echo "Deploy application to dev environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                       
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image prune -a -f"
+                        function remote_ssh {
+                	   ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_DEV_HOST} "$1"
+            		}
+                    	remote_ssh "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
+                    	remote_ssh 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                       
+                        remote_ssh "docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
+                        remote_ssh "docker image prune -a -f"
                     '''
                 }
             }
