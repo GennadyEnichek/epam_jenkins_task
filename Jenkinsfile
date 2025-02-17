@@ -20,7 +20,7 @@ pipeline {
             steps{
                 echo "Building the application"
                 sh '''
-                    if $BRANCH_NAME == "dev"
+                    if [[ $BRANCH_NAME == "dev" ]]
                         then rm -f src/logo.svg && mv src/logo1.svg src/logo.svg
                     fi
                 '''
@@ -88,10 +88,11 @@ pipeline {
                 echo "Deploy application to main environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} 'if [[ $(docker ps -q -a | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                      
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker run -d -p ${MAIN_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} "docker image prune -a -f"
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} \
+                    	"docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} &&\
+                    	bash -c 'if [[ $(docker ps -q -a | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi' &&\                     
+                        docker run -d -p ${MAIN_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} &&\
+                        docker image prune -a -f"
                     '''
                 }
             }
@@ -107,10 +108,11 @@ pipeline {
                 echo "Deploy application to dev environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi'                       
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG}"
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} "docker image prune -a -f"
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} \
+                    	"docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} &&\
+                    	bash -c 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi' &&\                       
+                        docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} &&\
+                        docker image prune -a -f"
                     '''
                 }
             }
