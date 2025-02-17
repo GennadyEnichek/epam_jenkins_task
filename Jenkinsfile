@@ -108,10 +108,10 @@ pipeline {
                 echo "Deploy application to dev environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''#!/bin/bash
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} \
-                    	"docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \
-                    	bash -c 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi' && \                       
-                        docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_DEV_HOST_USER}@${REMOTE_DEV_HOST} \\
+                    	"docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \\
+                    	bash -c 'if [[ $(docker ps -a -q | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi' && \\                       
+                        docker run -d -p ${DEV_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \\
                         docker image prune -a -f"
                     '''
                 }
