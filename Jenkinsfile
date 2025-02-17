@@ -20,7 +20,7 @@ pipeline {
             steps{
                 echo "Building the application"
                 sh '''
-                    if [[ $BRANCH_NAME = "dev" ]]
+                    if [ $BRANCH_NAME = "dev" ]
                         then rm -f src/logo.svg && mv src/logo1.svg src/logo.svg
                     fi
                 '''
