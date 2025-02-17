@@ -88,10 +88,10 @@ pipeline {
                 echo "Deploy application to main environment"
                 sshagent(credentials: ['my-ssh']){
                     sh '''#!/bin/bash
-                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} \
-                    	"docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \
-                    	bash -c 'if [[ $(docker ps -q -a | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi' && \                     
-                        docker run -d -p ${MAIN_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \
+                    	ssh -o StrictHostKeyChecking=no ${REMOTE_MAIN_HOST_USER}@${REMOTE_MAIN_HOST} \\
+                    	"docker image pull ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \\
+                    	bash -c 'if [[ $(docker ps -q -a | wc -l) -ne 0 ]]; then docker ps -a -q | xargs docker container rm -f; fi' && \\                     
+                        docker run -d -p ${MAIN_PORT}:80 ${DOCKER_HUB_REPO}node${BRANCH_NAME}:${IMAGE_TAG} && \\
                         docker image prune -a -f"
                     '''
                 }
